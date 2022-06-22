@@ -29,6 +29,11 @@ func main() {
 				Usage:   "path to the public key file, KMS URI or Kubernetes Secret",
 				EnvVars: []string{"KEY"},
 			},
+			&cli.BoolFlag{
+				Name:    "k8s-keychain",
+				Usage:   "whether to use the kubernetes keychain instead of the default keychain",
+				EnvVars: []string{"K8S_KEYCHAIN"},
+			},
 		},
 		Action: func(c *cli.Context) error {
 			key := strings.TrimSpace(c.String("key"))
@@ -36,11 +41,13 @@ func main() {
 				return errors.New("key must be present")
 			}
 
+			k8sKeychain := c.Bool("k8s-keychain")
+
 			ctx, cancel := context.WithCancel(context.Background())
 
 			server := &http.Server{
 				Addr:    ":8080",
-				Handler: setupChiRouter(ctx, key),
+				Handler: setupChiRouter(ctx, key, k8sKeychain),
 			}
 
 			sigs := make(chan os.Signal, 1)
@@ -78,7 +85,7 @@ func main() {
 	}
 }
 
-func setupChiRouter(ctx context.Context, key string) http.Handler {
+func setupChiRouter(ctx context.Context, key string, k8sKeychain bool) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
@@ -94,7 +101,7 @@ func setupChiRouter(ctx context.Context, key string) http.Handler {
 
 	r.Use(middleware.Heartbeat("/ping"))
 
-	api.SetupRoutes(ctx, r, key)
+	api.SetupRoutes(ctx, r, key, k8sKeychain)
 
 	return r
 }
