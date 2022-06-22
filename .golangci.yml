@@ -1,0 +1,10 @@
+linters:
+  # enable-all: true
+  enable:
+    - gosec
+  disable:
+    - dogsled
+    - errcheck
+    - funlen
+    - godot
+    - gofumpt

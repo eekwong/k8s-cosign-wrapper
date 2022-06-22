@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-cosign-wrapper
+  labels:
+    app.kubernetes.io/name: k8s-cosign-wrapper
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: k8s-cosign-wrapper
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: k8s-cosign-wrapper
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+      - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: KEY
+          value: "/etc/k8s-cosign-wrapper/cosign.pub"
+        name: k8s-cosign-wrapper
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - mountPath: /etc/k8s-cosign-wrapper
+          name: k8s-cosign-wrapper-pub-key
+          readOnly: true
+        - mountPath: /root/.docker
+          name: k8s-cosign-wrapper-docker-config
+          readOnly: true
+      serviceAccountName: default
+      volumes:
+      - name: k8s-cosign-wrapper-pub-key
+        secret:
+          defaultMode: 420
+          secretName: k8s-cosign-wrapper-pub-key
+      - name: k8s-cosign-wrapper-docker-config
+        secret:
+          defaultMode: 420
+          secretName: k8s-cosign-wrapper-docker-config
