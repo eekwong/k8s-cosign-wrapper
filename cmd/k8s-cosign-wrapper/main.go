@@ -94,8 +94,8 @@ func setupChiRouter(ctx context.Context, key string, k8sKeychain bool) http.Hand
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	logger := httplog.NewLogger("k8s-cosign-wrapper", httplog.Options{
-		JSON:    false,
-		Concise: true,
+		JSON:    true,
+		Concise: false,
 	})
 	r.Use(httplog.RequestLogger(logger))
 

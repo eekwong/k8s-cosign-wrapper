@@ -3,18 +3,19 @@ package api
 import (
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	ecr "github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
 	"github.com/chrismellard/docker-credential-acr-env/pkg/credhelper"
-	"github.com/go-chi/httplog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/github"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/rs/zerolog/log"
 	"github.com/sigstore/cosign/pkg/cosign"
 	ociremote "github.com/sigstore/cosign/pkg/oci/remote"
 	"github.com/sigstore/cosign/pkg/signature"
@@ -36,8 +37,7 @@ func (api *api) verify() http.HandlerFunc {
 			return
 		}
 
-		oplog := httplog.LogEntry(r.Context())
-		oplog.Info().Msgf("image: %s", request.Image)
+		log.Info().Str("image", request.Image).Msg("received image")
 
 		api.mux.Lock()
 		defer api.mux.Unlock()
@@ -76,10 +76,21 @@ func (api *api) verify() http.HandlerFunc {
 			)
 		}
 
-		if _, _, err = cosign.VerifyImageSignatures(api.ctx, ref, opts); err != nil {
-			http.Error(w, "no valid signature is found", http.StatusBadRequest)
+		sigs, bundledVerified, err := cosign.VerifyImageSignatures(api.ctx, ref, opts)
+		if err != nil {
+			log.Error().Err(err).Msg("error from cosign.VerifyImageSignatures")
+			http.Error(w, fmt.Sprintf("error: %+v", err), http.StatusBadRequest)
 			return
 		}
+
+		signatures := make([]string, 0)
+		for s := range sigs {
+			signatures = append(signatures, fmt.Sprintf("%+v", s))
+		}
+		log.Info().
+			Strs("sigs", signatures).
+			Bool("bundledVerified", bundledVerified).
+			Msg("return from cosign.VerifyImageSignatures")
 
 		w.Header().Add("Content-Type", "text/plain")
 		w.Write([]byte("OK"))
