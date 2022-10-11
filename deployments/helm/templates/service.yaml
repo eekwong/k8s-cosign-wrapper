@@ -5,8 +5,8 @@ metadata:
   namespace: k8s-cosign-wrapper
 spec:
   selector:
-    app.kubernetes.io/instance: cosign
-    app.kubernetes.io/name: {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: k8s-cosign-wrapper
   ports:
     - protocol: TCP
       port: 8080

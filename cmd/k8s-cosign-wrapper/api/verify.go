@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	alibabaacr "github.com/mozillazg/docker-credential-acr-helper/pkg/credhelper"
 	"github.com/rs/zerolog/log"
 	"github.com/sigstore/cosign/pkg/cosign"
 	ociremote "github.com/sigstore/cosign/pkg/oci/remote"
@@ -66,8 +67,9 @@ func (api *api) verify() http.HandlerFunc {
 			kc := authn.NewMultiKeychain(
 				authn.DefaultKeychain,
 				google.Keychain,
-				authn.NewKeychainFromHelper(ecr.NewECRHelper(ecr.WithLogger(ioutil.Discard))),
+				authn.NewKeychainFromHelper(ecr.NewECRHelper(ecr.WithLogger(io.Discard))),
 				authn.NewKeychainFromHelper(credhelper.NewACRCredentialsHelper()),
+				authn.NewKeychainFromHelper(alibabaacr.NewACRHelper().WithLoggerOut(io.Discard)),
 				github.Keychain,
 			)
 			opts.RegistryClientOpts = append(
