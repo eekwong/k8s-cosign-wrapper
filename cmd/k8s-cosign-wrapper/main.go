@@ -87,6 +87,7 @@ func main() {
 
 func setupChiRouter(ctx context.Context, key string, k8sKeychain bool) http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.Heartbeat("/ping"))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
@@ -98,8 +99,6 @@ func setupChiRouter(ctx context.Context, key string, k8sKeychain bool) http.Hand
 		Concise: false,
 	})
 	r.Use(httplog.RequestLogger(logger))
-
-	r.Use(middleware.Heartbeat("/ping"))
 
 	api.SetupRoutes(ctx, r, key, k8sKeychain)
 
