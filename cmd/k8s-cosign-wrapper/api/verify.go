@@ -63,8 +63,9 @@ func (api *api) verify() http.HandlerFunc {
 			SigVerifier: key,
 		}
 
+		var kc authn.Keychain
 		if api.k8sKeychain {
-			kc := authn.NewMultiKeychain(
+			kc = authn.NewMultiKeychain(
 				authn.DefaultKeychain,
 				google.Keychain,
 				authn.NewKeychainFromHelper(ecr.NewECRHelper(ecr.WithLogger(io.Discard))),
@@ -72,11 +73,13 @@ func (api *api) verify() http.HandlerFunc {
 				authn.NewKeychainFromHelper(alibabaacr.NewACRHelper().WithLoggerOut(io.Discard)),
 				github.Keychain,
 			)
-			opts.RegistryClientOpts = append(
-				opts.RegistryClientOpts,
-				ociremote.WithRemoteOptions(remote.WithAuthFromKeychain(kc)),
-			)
+		} else {
+			kc = authn.DefaultKeychain
 		}
+		opts.RegistryClientOpts = append(
+			opts.RegistryClientOpts,
+			ociremote.WithRemoteOptions(remote.WithAuthFromKeychain(kc)),
+		)
 
 		sigs, bundledVerified, err := cosign.VerifyImageSignatures(api.ctx, ref, opts)
 		if err != nil {
