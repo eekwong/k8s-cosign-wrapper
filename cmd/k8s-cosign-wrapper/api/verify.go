@@ -40,9 +40,6 @@ func (api *api) verify() http.HandlerFunc {
 
 		log.Info().Str("image", request.Image).Msg("received image")
 
-		api.mux.Lock()
-		defer api.mux.Unlock()
-
 		key, err := signature.LoadPublicKey(api.ctx, api.key)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
